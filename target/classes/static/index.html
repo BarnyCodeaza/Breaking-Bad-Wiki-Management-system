@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breaking Bad Wiki</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #1a1a1a; color: #fff; margin: 0; padding: 20px; text-align: center; }
+        .header { margin-bottom: 30px; position: relative; } /* Added relative for positioning */
+        h1 { color: #369457; text-transform: uppercase; letter-spacing: 2px; }
+
+        /* BUTONUL DE LOGIN (NOU) */
+        .admin-link {
+            position: absolute;
+            top: 0;
+            right: 0;
+            text-decoration: none;
+            color: #666;
+            border: 1px solid #444;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            transition: 0.3s;
+            background: rgba(0,0,0,0.3);
+        }
+        .admin-link:hover {
+            color: #fff;
+            background-color: #2e7d32;
+            border-color: #2e7d32;
+        }
+
+        .controls { background: #333; padding: 20px; border-radius: 8px; display: inline-block; margin-bottom: 20px; max-width: 900px; }
+
+        input[type="text"], select { padding: 10px; border-radius: 4px; border: 1px solid #555; background: #444; color: white; margin: 5px; }
+
+        .status-btn { padding: 8px 15px; background-color: #444; color: white; border: 1px solid #555; cursor: pointer; border-radius: 4px; margin: 0 5px; transition: 0.3s; }
+        .status-btn:hover { background-color: #555; }
+        .status-btn.active { background-color: #2e7d32; border-color: #2e7d32; font-weight: bold; }
+
+        .search-btn { background-color: #2e7d32; border: none; font-weight: bold; padding: 10px 20px; cursor: pointer; color: white; border-radius: 4px;}
+        .search-btn:hover { background-color: #1b5e20; }
+
+        .grid-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; max-width: 1200px; margin: 0 auto; }
+        .card { background: #2c2c2c; border-radius: 10px; overflow: hidden; transition: transform 0.2s; box-shadow: 0 4px 8px rgba(0,0,0,0.3); }
+        .card:hover { transform: translateY(-5px); border: 1px solid #369457; }
+        .card img { width: 100%; height: 350px; object-fit: cover; }
+        .info { padding: 15px; text-align: left; }
+        .name { font-size: 1.2em; font-weight: bold; color: #eee; margin: 0 0 5px 0; }
+        .nickname { color: #aaa; font-style: italic; font-size: 0.9em; margin-bottom: 10px; }
+        .status { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; }
+        .alive { background-color: #2e7d32; }
+        .dead { background-color: #c62828; }
+        .pagination { margin-top: 30px; display: flex; justify-content: center; gap: 15px; align-items: center; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <a href="login.html" class="admin-link">🔐 Admin Login</a>
+
+    <h1>Breaking Bad Database</h1>
+
+    <div class="controls">
+        <div>
+            <input type="text" id="searchInput" placeholder="Caută personaj..." style="width: 250px;">
+            <button onclick="aplicaFiltre()" class="search-btn">🔍 Caută</button>
+        </div>
+
+        <hr style="border-color: #444; margin: 15px 0;">
+
+        <div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
+
+            <div id="filterButtons">
+                <span style="color:#aaa; font-size:0.9em; margin-right:5px;">Status:</span>
+                <button onclick="setStatus('All', this)" class="status-btn active" data-val="All">Toți</button>
+                <button onclick="setStatus('Alive', this)" class="status-btn" data-val="Alive">Alive</button>
+                <button onclick="setStatus('Deceased', this)" class="status-btn" data-val="Deceased">Deceased</button>
+                <button onclick="setStatus('Unknown', this)" class="status-btn" data-val="Unknown">Unknown</button>
+            </div>
+
+            <div>
+                <span style="color:#aaa; font-size:0.9em; margin-right:5px;">Sezon:</span>
+                <select id="seasonSelect" onchange="aplicaFiltre()">
+                    <option value="0">Toate Sezoanele</option>
+                    <option value="1">Sezonul 1</option>
+                    <option value="2">Sezonul 2</option>
+                    <option value="3">Sezonul 3</option>
+                    <option value="4">Sezonul 4</option>
+                    <option value="5">Sezonul 5</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="content" class="grid-container">
+    <p>Se încarcă datele...</p>
+</div>
+
+<div class="pagination">
+    <button id="btnPrev" onclick="schimbaPagina(-1)">❮ Anterior</button>
+    <span id="pageInfo">Pagina 1</span>
+
+    <select id="pageSizeSelect" onchange="aplicaFiltre()" style="padding: 5px; margin: 0 10px;">
+        <option value="8" selected>8 pe pagină</option>
+        <option value="12">12 pe pagină</option>
+        <option value="20">20 pe pagină</option>
+    </select>
+
+    <button id="btnNext" onclick="schimbaPagina(1)">Următor ❯</button>
+</div>
+
+<script>
+    let currentPage = 1;
+    let totalPages = 1;
+    let currentStatus = "All";
+
+    async function incarcaDate() {
+        const container = document.getElementById('content');
+
+        const query = document.getElementById('searchInput').value;
+        const pageSize = document.getElementById('pageSizeSelect').value;
+        const season = document.getElementById('seasonSelect').value;
+
+        updateURL(query, currentStatus, season, pageSize, currentPage);
+
+        try {
+            const url = `http://localhost:8080/api/data/all?page=${currentPage}&size=${pageSize}&q=${query}&status=${currentStatus}&season=${season}`;
+
+            const response = await fetch(url);
+            if (!response.ok) throw new Error("Eroare server");
+            const data = await response.json();
+
+            currentPage = data.currentPage;
+            totalPages = data.totalPages;
+            container.innerHTML = "";
+
+            if (!data.content || data.content.length === 0) {
+                container.innerHTML = "<p>Nu am găsit rezultate.</p>";
+                return;
+            }
+
+            data.content.forEach(item => {
+                const info = item.data;
+                const statusClass = info.status && info.status.includes("Alive") ? "alive" : "dead";
+
+                const cardHtml = `
+                        <div class="card" onclick="window.location.href='details.html?id=${item.id}'" style="cursor: pointer;">
+                            <img src="${info.image || 'https://via.placeholder.com/300x400'}" alt="${info.name}">
+                            <div class="info">
+                                <h3 class="name">${info.name}</h3>
+                                <div class="nickname">"${info.nickname}"</div>
+                                <span class="status ${statusClass}">${info.status}</span>
+                            </div>
+                        </div>
+                    `;
+                container.innerHTML += cardHtml;
+            });
+
+            document.getElementById('pageInfo').innerText = `Pagina ${currentPage} din ${totalPages}`;
+            document.getElementById('btnPrev').disabled = (currentPage === 1);
+            document.getElementById('btnNext').disabled = (currentPage === totalPages);
+
+        } catch (error) {
+            console.error("Eroare:", error);
+            container.innerHTML = "<p style='color:red'>Verifică serverul!</p>";
+        }
+    }
+
+    function updateURL(q, status, season, size, page) {
+        const params = new URLSearchParams();
+        if(q) params.set('q', q);
+        if(status && status !== 'All') params.set('status', status);
+        if(season && season !== '0') params.set('season', season);
+        if(size && size !== '8') params.set('size', size);
+        if(page && page !== 1) params.set('page', page);
+        window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+    }
+
+    function initializareDinURL() {
+        const params = new URLSearchParams(window.location.search);
+
+        if(params.has('q')) document.getElementById('searchInput').value = params.get('q');
+        if(params.has('season')) document.getElementById('seasonSelect').value = params.get('season');
+        if(params.has('size')) document.getElementById('pageSizeSelect').value = params.get('size');
+        if(params.has('page')) currentPage = parseInt(params.get('page'));
+        if(params.has('status')) {
+            currentStatus = params.get('status');
+            document.querySelectorAll('.status-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.status-btn[data-val="${currentStatus}"]`);
+            if(activeBtn) activeBtn.classList.add('active');
+        }
+        incarcaDate();
+    }
+
+    function setStatus(status, btnElement) {
+        currentStatus = status;
+        document.querySelectorAll('#filterButtons button').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+        aplicaFiltre();
+    }
+
+    function aplicaFiltre() {
+        currentPage = 1;
+        incarcaDate();
+    }
+
+    function schimbaPagina(directie) {
+        let nouaPagina = currentPage + directie;
+        if (nouaPagina >= 1 && nouaPagina <= totalPages) {
+            currentPage = nouaPagina;
+            incarcaDate();
+        }
+    }
+
+    window.onload = initializareDinURL;
+</script>
+</body>
+</html>

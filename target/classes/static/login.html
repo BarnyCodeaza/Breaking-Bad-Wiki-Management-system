@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Admin</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #1a1a1a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-box { background: #333; padding: 40px; border-radius: 10px; text-align: center; width: 300px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+
+        /* Input-uri stilizate */
+        input { width: 100%; padding: 10px; margin: 10px 0; border-radius: 5px; border: none; box-sizing: border-box;}
+
+        button { width: 100%; padding: 10px; background-color: #2e7d32; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; margin-top: 10px;}
+        button:hover { background-color: #1b5e20; }
+        .error { color: #ff5252; margin-top: 10px; display: none; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+<div class="login-box">
+    <h2 style="color:#2e7d32">Admin Login</h2>
+
+    <input type="email" id="emailInput" placeholder="Email (ex: admin@test.com)">
+
+    <input type="password" id="passwordInput" placeholder="Parola (admin)">
+
+    <button onclick="login()">Intră</button>
+    <p class="error" id="errorMsg">Email sau parolă incorectă!</p>
+    <br>
+    <a href="index.html" style="color:#888; font-size:0.8em; text-decoration:none">Înapoi la site</a>
+</div>
+
+<script>
+    function login() {
+        // MODIFICARE 2: Citim valoarea din câmpul de email
+        const email = document.getElementById('emailInput').value;
+        const pass = document.getElementById('passwordInput').value;
+
+        // MODIFICARE 3: Verificăm Email-ul în loc de Username
+        // Poți schimba "admin@test.com" cu ce email vrei tu
+        if (email === "voicu@simion.com" && pass === "prietenie") {
+
+            // Salvăm sesiunea și intrăm
+            sessionStorage.setItem("isLoggedIn", "true");
+            window.location.href = "admin.html";
+
+        } else {
+            document.getElementById('errorMsg').style.display = "block";
+        }
+    }
+</script>
+
+</body>
+</html>

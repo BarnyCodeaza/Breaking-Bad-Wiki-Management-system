@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <title>Admin Panel - Breaking Bad</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #eee; color: #333; padding: 20px; }
+
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+
+        h1 { color: #2e7d32; border-bottom: 2px solid #ddd; padding-bottom: 10px; }
+
+        /* Tabel */
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f8f8; font-weight: bold; }
+        tr:hover { background-color: #f1f1f1; }
+
+        img.thumb { width: 50px; height: 50px; object-fit: cover; border-radius: 50%; }
+
+        /* Butoane */
+        .btn { padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; color: white; margin-right: 5px; }
+        .btn-del { background-color: #c62828; }
+        .btn-edit { background-color: #1565c0; }
+        .btn-add { background-color: #2e7d32; padding: 10px 20px; font-size: 1em; margin-bottom: 15px; }
+
+        .top-bar { display: flex; justify-content: space-between; align-items: center; }
+
+    </style>
+</head>
+<body>
+<div class="top-bar">
+    <h1>Panou de Administrare</h1>
+    <div>
+        <a href="index.html" style="color: #666; margin-right: 15px;">🏠 Site Public</a>
+        <button onclick="logout()" style="background-color: #555;">Deconectare</button>
+    </div>
+</div>
+<div class="container">
+    <div class="top-bar">
+        <h1>Panou de Administrare</h1>
+        <a href="index.html" style="color: #666; text-decoration: none;">🏠 Înapoi la Site</a>
+    </div>
+
+    <button class="btn btn-add" onclick="alert('Urmează să implementăm Adăugarea!')">＋ Adaugă Personaj</button>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Poză</th>
+            <th>Nume</th>
+            <th>Status</th>
+            <th>Acțiuni</th>
+        </tr>
+        </thead>
+        <tbody id="tableBody">
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // --- PROTECȚIE: Verificăm dacă e logat ---
+    if (sessionStorage.getItem("isLoggedIn") !== "true") {
+        window.location.href = "login.html";
+    }
+
+    // --- Logout (Opțional: pune un buton de Logout în HTML dacă vrei) ---
+    function logout() {
+        sessionStorage.removeItem("isLoggedIn");
+        window.location.href = "login.html";
+    }
+
+    const API_URL = "http://localhost:8080/api/data";
+    // ... restul codului tău existent ...
+    async function incarcaTabel() {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = "<tr><td colspan='5'>Se încarcă...</td></tr>";
+
+        try {
+            // Luăm toate datele (pagină mare ca să le vedem pe toate rapid)
+            const response = await fetch('http://localhost:8080/api/data/all?size=100');
+            const data = await response.json();
+
+            tbody.innerHTML = "";
+
+            data.content.forEach(item => {
+                const info = item.data;
+                const row = `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td><img src="${info.image || ''}" class="thumb" onerror="this.style.display='none'"></td>
+                        <td><strong>${info.name}</strong><br><small>${info.nickname}</small></td>
+                        <td>${info.status}</td>
+                        <td>
+                            <button class="btn btn-edit" onclick="editeaza(${item.id})">Edit</button>
+                            <button class="btn btn-del" onclick="sterge(${item.id})">Șterge</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+        } catch (e) {
+            tbody.innerHTML = "<tr><td colspan='5' style='color:red'>Eroare conexiune!</td></tr>";
+        }
+    }
+
+    async function sterge(id) {
+        if (!confirm("Ești sigur că vrei să ștergi acest personaj?")) return;
+
+        try {
+            const response = await fetch(`http://localhost:8080/api/data/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (response.ok) {
+                alert("Șters cu succes!");
+                incarcaTabel(); // Reîmprospătăm lista
+            } else {
+                alert("Eroare la ștergere.");
+            }
+        } catch (e) {
+            console.error(e);
+            alert("Eroare conexiune.");
+        }
+    }
+
+    function editeaza(id) {
+        alert("Editarea pentru ID " + id + " urmează în pasul următor!");
+    }
+
+    // Pornire
+    incarcaTabel();
+</script>
+
+</body>
+</html>
